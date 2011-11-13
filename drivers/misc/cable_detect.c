@@ -107,19 +107,26 @@ static DEFINE_MUTEX(cable_notify_sem);
 static void send_cable_connect_notify(int cable_type)
 {
 	static struct t_cable_status_notifier *notifier;
+	struct cable_detect_info *pInfo = &the_cable_info;
 
 	mutex_lock(&cable_notify_sem);
+
+	if (cable_type > 0 && pInfo->accessory_type == DOCK_STATE_DMB) {
+		CABLE_INFO("%s: DMB present. Disabling charge\n", __func__);
+		cable_type = CONNECT_TYPE_CLEAR;
+	} else if (cable_type == CONNECT_TYPE_UNKNOWN) {
+		/* use slow charging for unknown type*/
+		cable_type = CONNECT_TYPE_USB;
+	}
+
 	list_for_each_entry(notifier,
 		&g_lh_calbe_detect_notifier_list,
 		cable_notifier_link) {
 			if (notifier->func != NULL) {
-				CABLE_INFO("Send to: %s\n", notifier->name);
+				CABLE_INFO("Send to: %s, %d\n",
+						notifier->name, cable_type);
 				/* Notify other drivers about connect type. */
-				/* use slow charging for unknown type*/
-				if (cable_type == CONNECT_TYPE_UNKNOWN)
-					notifier->func(CONNECT_TYPE_USB);
-				else
-					notifier->func(cable_type);
+				notifier->func(cable_type);
 			}
 		}
 	mutex_unlock(&cable_notify_sem);
@@ -292,6 +299,7 @@ static void cable_detect_handler(struct work_struct *w)
 		break;
 	case DOCK_STATE_DMB:
 		CABLE_INFO("DMB inserted\n");
+		send_cable_connect_notify(CONNECT_TYPE_CLEAR);
 		switch_set_state(&dock_switch, DOCK_STATE_DMB);
 		pInfo->accessory_type = DOCK_STATE_DMB;
 		break;

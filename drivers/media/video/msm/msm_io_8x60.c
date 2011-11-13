@@ -601,8 +601,9 @@ static irqreturn_t msm_io_csi_irq(int irq_num, void *data)
 			pr_info("[CAM]msm_io_csi_irq: CRC error\n");
 		if (irq & MIPI_IMASK_FRAME_SYNC_ERROR)
 			pr_info("[CAM]msm_io_csi_irq: FS not paired with FE\n");
-		if (irq & MIPI_IMASK_ID_ERROR)
+/*		if (irq & MIPI_IMASK_ID_ERROR)
 			pr_info("[CAM]msm_io_csi_irq: Long packet ID not defined\n");
+*/
 		if (irq & MIPI_IMASK_EOT_ERROR)
 			pr_info("[CAM]msm_io_csi_irq: The received data is less than the value indicated by WC\n");
 		if (irq & MIPI_IMASK_DL0_FIFO_OVERFLOW)
@@ -734,7 +735,7 @@ int msm_camio_enable(struct platform_device *pdev)
 		goto csi_busy;
 	}
 	rc = request_irq(camio_ext.csiirq, msm_io_csi_irq,
-		IRQF_TRIGGER_RISING, "csi", 0);
+		IRQF_TRIGGER_HIGH, "csi", 0);
 	if (rc < 0)
 		goto csi_irq_fail;
 
